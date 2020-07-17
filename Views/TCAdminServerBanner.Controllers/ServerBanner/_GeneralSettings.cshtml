@@ -1,0 +1,41 @@
+﻿@using System.Web.Mvc.Ajax
+@using System.Web.Mvc.Html
+@using Kendo.Mvc.UI
+@using TCAdmin.SDK.Web.MVC.Extensions
+@using TCAdminServerBanner.Controllers
+@model TCAdminServerBanner.Models.GeneralSettingsModel
+
+@{
+    var gameId = int.Parse(ViewData["gameId"].ToString());
+}
+
+@using (Ajax.BeginForm("GeneralSettings", "ServerBanner", new AjaxOptions {OnComplete = "onComplete", OnBegin = "onBegin"}))
+{
+    @Html.AntiForgeryToken()
+    <div class="primary-toolbar">
+        @(Html.Kendo().ToolBar()
+            .Name("generalToolBar")
+            .Items(items =>
+            {
+                items.Add().Template(this.GetToolbarButton(Resources.Global.Save, "save"));
+                items.Add().Type(CommandType.Button).Icon("cancel").Text(Resources.Global.Cancel).Click("TCAdmin.Ajax.CancelClicked");
+            }))
+    </div>
+
+    <div class="primary-content">
+        <fieldset class="fieldset-form auto-focus">
+            @Html.ValidationSummary(true)
+            @Html.Hidden("id", gameId)
+            <ul>
+                <li>
+                    <dl>
+                        <h3>General Settings</h3>
+                        <dt>@Html.LabelFor(m => m.SizeX)</dt>
+                        <dd>@Html.Kendo().NumericTextBoxFor(m => m.SizeX).Format("#")@Html.ValidationMessageFor(m => m.SizeX)@Html.TooltipFor(m => m.SizeX)</dd>
+                        <dt>@Html.LabelFor(m => m.SizeY)</dt>
+                        <dd>@Html.Kendo().NumericTextBoxFor(m => m.SizeY).Format("#")@Html.ValidationMessageFor(m => m.SizeY)@Html.TooltipFor(m => m.SizeY)</dd></dl>
+                </li>
+            </ul>
+        </fieldset>
+    </div>
+}

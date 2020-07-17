@@ -1,0 +1,144 @@
+﻿@using System.Web.Mvc.Html
+@using Kendo.Mvc.UI
+@using TCAdmin.GameHosting.SDK.Objects
+@using TCAdmin.SDK.Web.MVC.Extensions
+@using TCAdminServerBanner.Models
+@model SettingsModel
+@{
+    Layout = this.GetTemplateFile("Shared/Main.cshtml", true);
+    int randomServiceId = Service.GetGameServices().Cast<Service>().ToList().FirstOrDefault(x => x.GameId  == Model.GameId).ServiceId;
+}
+
+@section sidebar{
+    @Html.Partial("_DefaultSidebar")
+}
+
+<style>
+    * {
+      box-sizing: border-box;
+    }
+    
+    .row::after {
+      content: "";
+      clear: both;
+      display: table;
+    }
+    
+    [class*="col-"] {
+      float: left;
+      padding: 15px;
+    }
+    
+    .col-1 {width: 8.33%;}
+    .col-2 {width: 16.66%;}
+    .col-3 {width: 25%;}
+    .col-4 {width: 33.33%;}
+    .col-5 {width: 41.66%;}
+    .col-6 {width: 50%;}
+    .col-7 {width: 58.33%;}
+    .col-8 {width: 66.66%;}
+    .col-9 {width: 75%;}
+    .col-10 {width: 83.33%;}
+    .col-11 {width: 91.66%;}
+    .col-12 {width: 100%;}
+</style>
+
+<div>
+    <div class="row">
+        <div class="col-6">
+            @(Html.Kendo().TabStrip()
+                .Name("tabStrip")
+                .Items(items =>
+                {
+                    items.Add().Text("General").LoadContentFrom("GeneralSettings", "ServerBanner", new {id = Model.GameId});
+                    items.Add().Text("Watermarks").LoadContentFrom("WatermarkSettings", "ServerBanner", new {id = Model.GameId, watermarkId = 1});
+                    items.Add().Text("Overlays").LoadContentFrom("OverlaySettings", "ServerBanner", new {id = Model.GameId, overlayId = 1});
+                    items.Add().Text("Miscellaneous").LoadContentFrom("MiscellaneousSettings", "ServerBanner", new {id = Model.GameId});
+                })
+                .SelectedIndex(0)
+                .Events(builder => builder.ContentLoad("tabStripContentLoad")))
+        </div>
+    </div>
+</div>
+
+<script>
+    let newWatermarkItem = 0;
+    
+    function onBegin(e){
+        kendo.ui.progress($(document.body), true);
+    }
+    
+    function onComplete(e){
+        if(e.responseJSON && e.responseJSON.Message){
+            TCAdmin.Ajax.ShowBasicDialog('Server Banner', e.responseJSON.Message);
+        }
+        if(e.Message){
+            TCAdmin.Ajax.ShowBasicDialog('Server Banner', e.Message);
+        }
+        kendo.ui.progress($(document.body), false);
+    }
+
+    function watermarkSelect(e){
+        kendo.ui.progress($("#tabStrip"), true)
+        console.log(e.dataItem);
+        const tabStrip = $("#tabStrip").data("kendoTabStrip");
+        const tab = tabStrip.tabGroup.find("li:eq(1)");
+        const link = tabStrip.tabGroup.find("li:eq(1) .k-link");
+        const newUrl = removeURLParameter(link.data("contentUrl"), 'watermarkId') + "?watermarkId=" + e.dataItem.Value;
+        
+        link.data("contentUrl", newUrl)
+        
+        tabStrip.reload(tab);
+        newWatermarkItem = e.item.index();
+    }
+    
+    function overlaySelect(e){
+        kendo.ui.progress($("#tabStrip"), true)
+        console.log(e.dataItem);
+        const tabStrip = $("#tabStrip").data("kendoTabStrip");
+        const tab = tabStrip.tabGroup.find("li:eq(2)");
+        const link = tabStrip.tabGroup.find("li:eq(2) .k-link");
+        const newUrl = removeURLParameter(link.data("contentUrl"), 'overlayId') + "?overlayId=" + e.dataItem.Value;
+        
+        link.data("contentUrl", newUrl)
+        
+        tabStrip.reload(tab);
+        newWatermarkItem = e.item.index();
+    }
+    
+    function refreshTab(tabIndex){
+        const tabStrip = $("#tabStrip").data("kendoTabStrip");
+        const tab = tabStrip.tabGroup.find("li:eq(" + tabIndex + ")");
+        
+        tabStrip.reload(tab);
+    }
+    
+    function tabStripContentLoad(e){
+        if($("#watermarkList").data("kendoDropDownList") != null){
+            $("#watermarkList").data("kendoDropDownList").select(newWatermarkItem);
+        }
+        
+        kendo.ui.progress($("#tabStrip"), false)
+    }
+    
+    function removeURLParameter(url, parameter) {
+        //prefer to use l.search if you have a location/link object
+        const urlParts = url.split('?');   
+        if (urlParts.length >= 2) {
+    
+            const prefix = encodeURIComponent(parameter) + '=';
+            const pars = urlParts[1].split(/[&;]/g);
+    
+            //reverse iteration as may be destructive
+            for (let i = pars.length; i-- > 0;) {    
+                //idiom for string.startsWith
+                if (pars[i].lastIndexOf(prefix, 0) !== -1) {  
+                    pars.splice(i, 1);
+                }
+            }
+    
+            return urlParts[0] + (pars.length > 0 ? '?' + pars.join('&') : '');
+        }
+        return url;
+    }
+</script>

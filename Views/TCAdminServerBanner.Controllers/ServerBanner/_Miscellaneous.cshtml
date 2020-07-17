@@ -1,0 +1,54 @@
+﻿@using System.Web.Mvc.Ajax
+@using System.Web.Mvc.Html
+@using Kendo.Mvc.UI
+@using TCAdminServerBanner.Controllers
+@{
+    var gameId = ViewData["gameId"].ToString();
+    var games = ServerBannerController.GetGamesWithConfig();
+    games.RemoveAll(x => x.GameId == int.Parse(gameId));
+}
+
+<div class="primary-content">
+    <fieldset class="fieldset-form auto-focus">
+        @using (Ajax.BeginForm("CopyConfig", "ServerBanner", new AjaxOptions {OnComplete = "onComplete", OnBegin = "onBegin"}))
+        {
+            @Html.AntiForgeryToken()
+            @Html.ValidationSummary(true)
+            @Html.Hidden("id", gameId)
+            <h3>
+                Copy config from: @(Html.Kendo().DropDownList()
+                                      .Name("fromGameId")
+                                      .Filter(FilterType.Contains)
+                                      .BindTo(games.Select(x => new DropDownListItem
+                                      {
+                                          Text = x.Name,
+                                          Value = x.GameId.ToString(),
+                                      }))
+                                      .DataTextField("Text")
+                                      .DataValueField("Value")
+                                      .AutoWidth(true)
+                                      )
+                @Html.Kendo().Button().Name("copySubmit").HtmlAttributes(new {type = "submit", @class = "k-primary"}).Content("Copy")
+            </h3>
+        }
+        @using (Ajax.BeginForm("DeleteConfig", "ServerBanner", new AjaxOptions {OnComplete = "onComplete", OnBegin = "onBegin"}))
+        {
+            @Html.AntiForgeryToken()
+            @Html.ValidationSummary(true)
+            @Html.Hidden("id", gameId)
+            <h3>
+                Reset to default:
+                @Html.Kendo().Button().Name("deleteSubmit").HtmlAttributes(new {type = "submit", @class = "k-primary"}).Content("Reset")
+            </h3>
+        }
+        @using (Ajax.BeginForm("ClearCache", "ServerBanner", new AjaxOptions {OnComplete = "onComplete", OnBegin = "onBegin"}))
+        {
+            @Html.AntiForgeryToken()
+            @Html.ValidationSummary(true)
+            @Html.Hidden("id", gameId)
+            <h3>
+                @Html.Kendo().Button().Name("clearCacheSubmit").HtmlAttributes(new {type = "submit", @class = "k-primary"}).Content("Clear Cache")
+            </h3>
+        }
+    </fieldset>
+</div>

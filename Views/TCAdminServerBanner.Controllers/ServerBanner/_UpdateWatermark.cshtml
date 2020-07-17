@@ -1,0 +1,114 @@
+﻿@using System.Web.Mvc.Ajax
+@using System.Web.Mvc.Html
+@using Kendo.Mvc.UI
+@using TCAdmin.SDK.Web.MVC.Extensions
+@using TCAdminServerBanner.Controllers
+@model TCAdminServerBanner.Models.WatermarkModel
+
+@{
+    var gameId = ViewData["gameId"].ToString();
+    var watermarks = ServerBannerController.GetWatermarksForGame(int.Parse(gameId));
+}
+
+@using (Ajax.BeginForm("WatermarkSettings", "ServerBanner", new AjaxOptions {OnComplete = "onComplete", OnBegin = "onBegin"}))
+{
+    @Html.AntiForgeryToken()
+    <div class="primary-toolbar">
+        @(Html.Kendo().ToolBar()
+            .Name("watermarksToolBar")
+            .Items(items =>
+            {
+                items.Add().Template(this.GetToolbarButton(Resources.Global.Save, "save"));
+                items.Add().Type(CommandType.Button).Icon("cancel").Text(Resources.Global.Cancel).Click("TCAdmin.Ajax.CancelClicked");
+                items.Add().Type(CommandType.Separator);
+                items.Add().Type(CommandType.Button).Text("Add").Icon("plus").Click("function() {addWatermark();}");
+                items.Add().Type(CommandType.Button).Text("Delete").Icon("minus").Click("function() {deleteWatermark();}");
+            }))
+    </div>
+
+    <div class="primary-content">
+        <fieldset class="fieldset-form auto-focus">
+            @Html.ValidationSummary(true)
+            @Html.HiddenFor(m => m.BannerObjectId)
+            @Html.Hidden("id", gameId)
+            <ul>
+                <li>
+                    <dl>
+                        <h3>
+                            Edit watermark: @(Html.Kendo().DropDownList()
+                                                .Name("watermarkList")
+                                                .Filter(FilterType.Contains)
+                                                .BindTo(watermarks.Select(x => new DropDownListItem
+                                                {
+                                                    Text = x.Text,
+                                                    Value = x.BannerObjectId.ToString(),
+                                                }))
+                                                .DataTextField("Text")
+                                                .DataValueField("Value")
+                                                .AutoWidth(true)
+                                                .Events(x => x.Select("watermarkSelect"))
+                                                )
+                        </h3>
+                        <dt>@Html.LabelFor(m => m.Text)</dt>
+                        <dd>@Html.Kendo().TextBoxFor(m => m.Text)@Html.ValidationMessageFor(m => m.Text)@Html.TooltipFor(m => m.Text)</dd>
+                        <dt>@Html.LabelFor(m => m.PositionX)</dt>
+                        <dd>@Html.Kendo().NumericTextBoxFor(m => m.PositionX).Format("#")@Html.ValidationMessageFor(m => m.PositionX)@Html.TooltipFor(m => m.PositionX)</dd>
+                        <dt>@Html.LabelFor(m => m.PositionY)</dt>
+                        <dd>@Html.Kendo().NumericTextBoxFor(m => m.PositionY).Format("#")@Html.ValidationMessageFor(m => m.PositionY)@Html.TooltipFor(m => m.PositionY)</dd>
+                        <dt>@Html.LabelFor(m => m.FontSize)</dt>
+                        <dd>@Html.Kendo().NumericTextBoxFor(m => m.FontSize).Format("#")@Html.ValidationMessageFor(m => m.FontSize)@Html.TooltipFor(m => m.FontSize)</dd>
+                        <dt>@Html.LabelFor(m => m.Color)</dt>
+                        <dd>@Html.Kendo().ColorPickerFor(m => m.Color)@Html.ValidationMessageFor(m => m.Color)@Html.TooltipFor(m => m.Color)</dd>
+                        <dt>@Html.LabelFor(m => m.ViewOrder)</dt>
+                        <dd>@Html.Kendo().NumericTextBoxFor(m => m.ViewOrder).Format("#")@Html.ValidationMessageFor(m => m.ViewOrder)@Html.TooltipFor(m => m.ViewOrder)</dd>
+                    </dl>
+                </li>
+            </ul>
+        </fieldset>
+    </div>
+}
+
+<script>    
+    function addWatermark(){
+        kendo.prompt("Enter the text for the new Watermark:", "$[Service.NameNoHtml]").then(function (data) {
+            $.ajax({
+                type: "POST",
+                url: "/ServerBanner/AddWatermark/" + @gameId,
+                data: JSON.stringify({text: data}),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                error: function (e) {
+                    refreshTab(1);
+                },
+                success: function (e) {
+                    refreshTab(1);
+                    
+                    $("#watermarkList").data("kendoDropDownList").select(function(dataItem) {
+                        return dataItem.name === data;
+                    });
+                }
+            });
+        })
+    }
+    
+    function deleteWatermark(){
+        kendo.confirm("Are you sure you want to delete the watermark?:").then(function (data) {
+            $.ajax({
+                type: "POST",
+                url: "/ServerBanner/DeleteWatermark/" + @gameId,
+                data: JSON.stringify({bannerObjectId: $("#watermarkList").data("kendoDropDownList").value()}),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                error: function (e) {
+                    refreshTab(1);
+                },
+                success: function (e) {
+                    refreshTab(1);
+                    $("#watermarkList").data("kendoDropDownList").select(function(dataItem) {
+                        return dataItem.index === 0;
+                    });
+                }
+            });
+        })
+    }
+</script>
